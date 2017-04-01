@@ -7,23 +7,32 @@
 class Triangle: public Object {
 public:
 	Triangle(Point& p1, Point& p2, Point& p3, Point& normal, Attributes sight) {
-		a = p1;
-		b = p2;
-		c = p3;
-		this->normal = normal;
-		attr = sight;
+		a_ = p1;
+		b_ = p2;
+		c_ = p3;
+		normal_ = normal;
+		attr_ = sight;
 	}
-	Point a;
-	Point b;
-	Point c;
-	Point normal;
-	Attributes attr;
+
+	Line reflRay(Line& ray, Point& x) {
+		ld proj = ray.direct*normal_ / normal_.len();
+		Point newDirect = ray.direct - normal_ / normal_.len() * proj * 2;
+		return Line{ x, x + newDirect };
+	}
+
+	Point getNormal(Point& x) {
+		return normal_;
+	}
+
+	ld getReflection() {
+		return attr_.reflection;
+	}
 
 	bool rayIntersect(Line& ray, Point& result, ld& distance, Colour& color) {
 		Point p1 = ray.direct;
-		Point p2 = b - c;
-		Point p3 = b - a;
-		Point p4 = b - ray.point;
+		Point p2 = b_ - c_;
+		Point p3 = b_ - a_;
+		Point p4 = b_ - ray.point;
 		ld delta = det(p1, p2, p3);
 
 		if (delta != 0) {
@@ -32,45 +41,60 @@ public:
 			ld dist = det(p4, p2, p3) / delta;
 			distance = dist;
 			result = ray.point + ray.direct * dist;
-			if (normal*ray.direct < 0) {
-				color = attr.face;
+			if (normal_*ray.direct < 0) {
+				color = attr_.face;
 			}
 			else {
-				color = attr.back;
+				color = attr_.back;
 			}
-			return (u >= 0) && (v >= 0) && (1 - u - v >= 0);
+			return (u > 0 || isZero(u)) && (v > 0 || isZero(v)) && (1 - u - v > 0 || isZero(1 - u - v)) && !isZero(distance);
 		}
 		else {
 			return 0;
 		}
 	}
 	~Triangle() {}
+private:
+	Point a_;
+	Point b_;
+	Point c_;
+	Point normal_;
+	Attributes attr_;
 };
 
 class Quadrangle : public Object {
 public:
 	Quadrangle(Point& p1, Point& p2, Point& p3, Point& p4, Point& normal, Attributes sight) {
-		a = p1;
-		b = p2;
-		c = p3;
-		d = p4;
-		this->normal = normal;
-		attr = sight;
+		a_ = p1;
+		b_ = p2;
+		c_ = p3;
+		d_ = p4;
+		normal_ = normal;
+		attr_ = sight;
 	}
-	Point a;
-	Point b;
-	Point c;
-	Point d;
-	Point normal;
-	Attributes attr;
+
+	Line reflRay(Line& ray, Point& x) {
+		ld proj = ray.direct*normal_ / normal_.len();
+		Point newDirect = ray.direct - normal_ / normal_.len() * proj * 2;
+		return Line{ x, x + newDirect };
+	}
+
+	ld getReflection() {
+		return attr_.reflection;
+	}
+
+	Point getNormal(Point& x) {
+		return normal_;
+	}
+
 	bool rayIntersect(Line& ray, Point& result, ld& distance, Colour& color) {
-		Triangle tr1(a, b, c, normal, attr);
-		Triangle tr2(a, c, d, normal, attr);
-		if (tr1.rayIntersect(ray, result, distance, color)) {
+		Triangle tr1(a_, b_, c_, normal_, attr_);
+		Triangle tr2(a_, c_, d_, normal_, attr_);
+		if (tr1.rayIntersect(ray, result, distance, color) && !isZero(distance)) {
 			return 1;
 		}
 		else
-			if (tr2.rayIntersect(ray, result, distance, color)) {
+			if (tr2.rayIntersect(ray, result, distance, color) && !isZero(distance)) {
 				return 1;
 			}
 			else {
@@ -78,31 +102,58 @@ public:
 			}
 	}
 	~Quadrangle() {}
+private:
+	Point a_;
+	Point b_;
+	Point c_;
+	Point d_;
+	Point normal_;
+	Attributes attr_;
 };
 
 class Sphere : public Object {
 public:
 	Sphere(Point& c, ld r, Attributes sight) {
-		cen = c;
-		rad = r;
-		attr = sight;
+		cen_ = c;
+		rad_ = r;
+		attr_ = sight;
 	}
-	ld rad;
-	Point cen;
-	Attributes attr;
+
+	Point getNormal(Point& x) {
+		return x - cen_;
+	}
+
+	ld getReflection() {
+		return attr_.reflection;
+	}
+
+	Line reflRay(Line& ray, Point& x) {
+		Point normal = getNormal(x);
+		ld proj = ray.direct*normal / normal.len();
+		Point newDirect = ray.direct - normal / normal.len() * proj * 2;
+		return Line{ x, x + newDirect };
+	}
+
 	bool rayIntersect(Line& ray, Point& result, ld& distance, Colour& color) {
-		Point cent = cen;
+		Point cent = cen_;
 		ld proj = ray.direct*cent / ray.direct.len();
-		if (cent.len2() - proj*proj > rad * rad) {
+		if (cent.len2() - proj*proj > rad_ * rad_) {
 			return 0;
 		}
 		else {
-			ld deltaDist = sqrt(rad * rad - (cent.len2() - proj*proj));
+			ld deltaDist = sqrt(rad_ * rad_ - (cent.len2() - proj*proj));
 			distance = (proj - deltaDist) / ray.direct.len();
+			if (distance < 0 || isZero(distance)) {
+				return 0;
+			}
 			result = ray.point + ray.direct * distance;
-			color = attr.face;
+			color = attr_.face;
 			return 1;
 		}
 	}
 	~Sphere() {}
+private:
+	ld rad_;
+	Point cen_;
+	Attributes attr_;
 };

@@ -53,14 +53,7 @@ ld det(Point& p1, Point& p2, Point& p3) {
 		p1.x * p2.z * p3.y - p1.y * p2.x * p3.z - p1.z * p2.y * p3.x;
 }
 
-class Line {
-public:
-	Line(Point& p1, Point& p2) :
-		point(p1)
-		, direct(p2 - p1)
-	{}
-	Point direct;
+struct Line {
 	Point point;
-
-	~Line() {}
+	Point direct;
 };

@@ -1,12 +1,13 @@
-#include <SDL.h>
-#include <cstdio>
+#include<SDL.h>
+#include<cstdio>
 #include<vector>
+#include<iostream>
 #include"attributes.h"
 #include"primitives.h"
 #include"detail.h"
 
-const int SCREEN_WIDTH = 300;
-const int SCREEN_HEIGHT = 300;
+const int SCREEN_WIDTH = 500;
+const int SCREEN_HEIGHT = 500;
 
 void draw(std::vector<Colour>& colors) {
 	SDL_Window* window = NULL;
@@ -50,21 +51,25 @@ void draw(std::vector<Colour>& colors) {
 int main(int argc, char* args[])
 {
 	std::vector<Object*> objects;
-	Triangle* tr = new Triangle(Point(3, 0, 0), Point(3, 3, 0), Point(3, 0, 4), Point(-1, 0, 0),
-		Attributes(Colour{ 255,0,0 }, Colour{ 0,255,0 }));
-	Sphere* sph = new Sphere(Point(2, 0, 0), 1, Attributes(Colour{ 0,0,255 }, Colour{ 0,0,0 }));
-	Quadrangle* qu = new Quadrangle(Point(5, -5, -5), Point(5, -5, 5), Point(5, 2, 2), Point(5, 5, -2), Point(-1, 0, 0),
-		Attributes(Colour{ 0,255,0 }, Colour{ 255,0,0 }));
+	//Triangle* tr = new Triangle(Point(3, 0, 0), Point(3, 3, 0), Point(3, 1, 4), Point(-1, 0, 0),
+	//	Attributes(Colour{ 255,0,0 }, Colour{ 0,255,0 }, 50));
+	Sphere* sph = new Sphere(Point(2, -4, 0), 1.5, Attributes(Colour{ 255,0,0 }, Colour{ 0,0,0 }, 40));
+	//Sphere* sph1 = new Sphere(Point(2, -4, 0), 1.5, Attributes(Colour{ 0,255,0 }, Colour{ 0,0,0 }, 50));
+	Quadrangle* qu = new Quadrangle(Point(6, -100, -100), Point(6, -100, 100), Point(6, 100, 100), Point(6, 100, -100), Point(-1, 0, 0),
+		Attributes(Colour{ 0,255,0 }, Colour{ 0,0,0 }, 0));
 	objects.push_back(sph);
-	objects.push_back(tr);
+	//objects.push_back(tr);
 	objects.push_back(qu);
-	
-
-	Point spec(0, 0, 0);
-	Screen scr(Point(1,-2,-2),Point(1,-2,2),Point(1,2,2),Point(1,2,-2), SCREEN_WIDTH, SCREEN_HEIGHT);
+	//objects.push_back(sph1);
+	Point spec(-1, 0, 0);
+	Screen scr(Point(0,-3,-3),Point(0,-3,3),Point(0,3,3),Point(0,3,-3), SCREEN_WIDTH, SCREEN_HEIGHT);
 	Scene sc(objects, spec);
 	std::vector<Colour> pixels;
 	sc.setPixels(scr, pixels);
 	draw(pixels);
+	//delete tr;
+	delete sph;
+	//delete sph1;
+	delete qu;
 	return 0;
 }
