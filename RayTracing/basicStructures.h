@@ -41,9 +41,9 @@ public:
 		return x*p2.x + y*p2.y + z*p2.z;
 	}
 
-	/*Point operator^(Point& p2) {
-		//
-	}*/
+	Point operator^(Point& p2) {
+		return Point(y*p2.z - z*p2.y, z*p2.x - x*p2.z, x*p2.y - y*p2.x);
+	}
 	~Point() {}
 };
 

@@ -39,7 +39,7 @@ public:
 			ld u = det(p1, p4, p3) / delta;
 			ld v = det(p1, p2, p4) / delta;
 			ld dist = det(p4, p2, p3) / delta;
-			distance = dist;
+			distance = dist*ray.direct.len();
 			result = ray.point + ray.direct * dist;
 			if (normal_*ray.direct < 0) {
 				color = attr_.face;
@@ -47,7 +47,7 @@ public:
 			else {
 				color = attr_.back;
 			}
-			return (u > 0 || isZero(u)) && (v > 0 || isZero(v)) && (1 - u - v > 0 || isZero(1 - u - v)) && !isZero(distance);
+			return (u > 0 || isZero(u)) && (v > 0 || isZero(v)) && (1 - u - v > 0 || isZero(1 - u - v)) && !isZero(distance) && !(distance < eps);
 		}
 		else {
 			return 0;
@@ -90,11 +90,11 @@ public:
 	bool rayIntersect(Line& ray, Point& result, ld& distance, Colour& color) {
 		Triangle tr1(a_, b_, c_, normal_, attr_);
 		Triangle tr2(a_, c_, d_, normal_, attr_);
-		if (tr1.rayIntersect(ray, result, distance, color) && !isZero(distance)) {
+		if (tr1.rayIntersect(ray, result, distance, color) && (distance >= eps || isZero(distance))) {
 			return 1;
 		}
 		else
-			if (tr2.rayIntersect(ray, result, distance, color) && !isZero(distance)) {
+			if (tr2.rayIntersect(ray, result, distance, color) && (distance >= eps || isZero(distance))) {
 				return 1;
 			}
 			else {
@@ -120,7 +120,8 @@ public:
 	}
 
 	Point getNormal(Point& x) {
-		return x - cen_;
+		Point y = x - cen_;
+		return y / y.len();
 	}
 
 	ld getReflection() {
@@ -135,18 +136,22 @@ public:
 	}
 
 	bool rayIntersect(Line& ray, Point& result, ld& distance, Colour& color) {
-		Point cent = cen_;
+		ld r2 = rad_*rad_;
+		Point cent = cen_-ray.point;
+		if (isZero(cent.len2() - r2) && cent*ray.direct < 0) {
+			return 0;
+		}
 		ld proj = ray.direct*cent / ray.direct.len();
-		if (cent.len2() - proj*proj > rad_ * rad_) {
+		if (cent.len2() - proj*proj > r2 || isZero(cent.len2() - proj*proj - r2) || proj < 0) {
 			return 0;
 		}
 		else {
-			ld deltaDist = sqrt(rad_ * rad_ - (cent.len2() - proj*proj));
-			distance = (proj - deltaDist) / ray.direct.len();
-			if (distance < 0 || isZero(distance)) {
+			ld deltaDist = sqrt(r2 - (cent.len2() - proj*proj));
+			distance = proj - deltaDist;
+			if (distance < eps) {
 				return 0;
 			}
-			result = ray.point + ray.direct * distance;
+			result = ray.point + ray.direct * distance / ray.direct.len();
 			color = attr_.face;
 			return 1;
 		}
