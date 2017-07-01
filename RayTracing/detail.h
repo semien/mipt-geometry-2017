@@ -4,6 +4,9 @@
 #include"basicStructures.h"
 #include"primitives.h"
 #include"functions.h"
+#include"thread_pool.h"
+
+extern const int SCREEN_WIDTH;
 
 Point m(0,0,0);
 
@@ -17,6 +20,7 @@ Colour average(Colour c1, Colour c2, Colour c3, Colour c4) {
 
 class Screen {
 public:
+	Screen() {}
 	Screen(Point& p1, Point& p2, Point& p3, Point& p4, int hor, int vert) :
 		horiz(hor)
 		, vert(vert)
@@ -25,6 +29,13 @@ public:
 		b = (p3 - p2)/ hor;
 		angle = p2;
 	}
+	Screen(Screen &other) :
+		a(other.a)
+		, b(other.b)
+		, angle(other.angle)
+		, horiz(other.horiz)
+		, vert(other.vert)
+	{}
 	Point a; //vert
 	Point b; //hor
 	Point angle; //left up
@@ -33,30 +44,53 @@ public:
 	~Screen() {}
 };
 
+
+
 class Scene {
 public:
 	Scene() {}
-	Scene(std::vector<Object*>& objs, std::vector<Light*> lighters, Point spectator): 
+	Scene(Scene& other) :
+		spectator_(other.spectator_)
+		, sceneObjects_(other.sceneObjects_)
+		, lighters_(other.lighters_)
+		, scr(other.scr)
+	{}
+		
+	Scene(std::vector<Object*>& objs, std::vector<Light*> lighters, Point spectator, Screen& scr): 
 		spectator_(spectator)
 		, sceneObjects_(objs)
 		, lighters_(lighters)
+		, scr(scr)
 	{}	
-	
-	void setPixels(Screen& scr, std::vector<Colour>& colors) {
-		for (int i = 0; i < scr.vert; ++i) {
-			for (int j = 0; j < scr.horiz; ++j) {
-				Point x = scr.angle + scr.b*i + scr.a*j;
-				Colour c1 = findColor(Line{ spectator_, x - spectator_ });
-				Point x2 = x + scr.b * 0.5;
-				Colour c2 = findColor(Line{ spectator_, x2 - spectator_ });
-				Point x3 = x + scr.a * 0.5;
-				Colour c3 = findColor(Line{ spectator_, x3 - spectator_ });
-				Point x4 = x3 + scr.b * 0.5;
-				Colour c4 = findColor(Line{ spectator_, x4 - spectator_ });
-				colors.push_back(average(c1, c2, c3, c4));
-			}
-		}
+
+	void setPixel(int i, int j, std::vector<Colour>& colors) {
+		Point screenPoint1 = scr.angle + scr.b*i + scr.a*j;
+		Line ray1{ spectator_, screenPoint1 - spectator_ };
+		Colour col1 = findColor(ray1);
+
+		/*Point screenPoint2 = scr.angle + scr.b*i + scr.b*0.5 + scr.a*j;
+		Line ray2{ spectator_, screenPoint2 - spectator_ };
+		Colour col2 = findColor(ray2);
+
+		Point screenPoint3 = scr.angle + scr.b*i + scr.a*j + scr.a*0.5;
+		Line ray3{ spectator_, screenPoint3 - spectator_ };
+		Colour col3 = findColor(ray3);
+
+		Point screenPoint4 = scr.angle + scr.b*i + scr.b*0.5 + scr.a*j + scr.a*0.5;
+		Line ray4{ spectator_, screenPoint4 - spectator_ };
+		Colour col4 = findColor(ray4);*/
+
+		colors[i*SCREEN_WIDTH + j] = col1;//average(col1, col2, col3, col4);
 	}
+	
+	void newSpec(Point newSpec) {
+		spectator_ = newSpec;
+	}
+
+	void newScreen(Screen screen) {
+		scr = screen;
+	}
+
 	~Scene(){}
 private:
 	Colour findSecondColor(Line& ray) {
@@ -68,7 +102,7 @@ private:
 		for (auto obj : sceneObjects_) {
 			ld dist;
 			Colour col;
-			if (obj->rayIntersect(ray, z, dist, col) && dist < distance) {
+			if (obj->rayIntersect(ray, z, dist, col, 1)  && dist < distance) {
 				intersectObj = obj;
 				distance = dist;
 				intersPoint = z;
@@ -77,7 +111,7 @@ private:
 		}
 
 		if (intersectObj == nullptr) {
-			return Colour{ -1,-1,-1 };
+			return Colour{ 0,0,0 };
 		}
 
 		Point u;
@@ -91,7 +125,7 @@ private:
 			Colour col2;
 			Line newRay{ intersPoint,directionLight };
 			for (auto object : sceneObjects_)
-				if (object->rayIntersect(newRay, u, dist2, col2) && dist2 < maxDistance) {
+				if (object->rayIntersect(newRay, u, dist2, col2, 0) && dist2 < maxDistance) {
 					intens = 0;
 					break;
 				}
@@ -116,7 +150,7 @@ private:
 		for (auto obj : sceneObjects_) {
 			ld dist;
 			Colour col;
-			if (obj->rayIntersect(ray, z, dist, col) && dist < distance) {
+			if (obj->rayIntersect(ray, z, dist, col , 0) && dist < distance) {
 				intersectObj = obj;
 				distance = dist;
 				intersPoint = z;
@@ -139,7 +173,7 @@ private:
 			Colour col2;
 			Line newRay{ intersPoint,directionLight };
 			for (auto object : sceneObjects_)
-				if (object->rayIntersect(newRay, u, dist2, col2) && dist2 < maxDistance) {
+				if (object->rayIntersect(newRay, u, dist2, col2, 0) && dist2 < maxDistance) {
 					intens = 0;
 					break;
 				}
@@ -153,12 +187,12 @@ private:
 		}
 		color = min(color*coeff);
 		Colour reflColor = findSecondColor(intersectObj->reflRay(ray, intersPoint));
-		if (reflColor.red != -1) {
+		//if (reflColor.red != -1) {
 			color = color*(1 - intersectObj->getReflection()) + reflColor*intersectObj->getReflection();
-		}
+		//}
 		return color;
 	}
-
+	Screen scr;
 	Point spectator_;
 	std::vector<Object*> sceneObjects_;
 	std::vector<Light*> lighters_;

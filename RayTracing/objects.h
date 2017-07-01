@@ -6,7 +6,7 @@
 
 class Object {
 public:
-	virtual bool rayIntersect(Line& ray, Point& result, ld& distance, Colour& color) = 0;
+	virtual bool rayIntersect(Line& ray, Point& result, ld& distance, Colour& color, int mode) = 0;
 	virtual Line reflRay(Line& ray, Point& x) = 0;
 	virtual Point getNormal(Point& x) = 0;
 	virtual ld getReflection() = 0;

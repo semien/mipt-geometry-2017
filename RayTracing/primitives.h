@@ -21,14 +21,14 @@ public:
 	}
 
 	Point getNormal(Point& x) {
-		return normal_;
+		return normal_ / normal_.len();
 	}
 
 	ld getReflection() {
 		return attr_.reflection;
 	}
 
-	bool rayIntersect(Line& ray, Point& result, ld& distance, Colour& color) {
+	bool rayIntersect(Line& ray, Point& result, ld& distance, Colour& color, int mode) {		
 		Point p1 = ray.direct;
 		Point p2 = b_ - c_;
 		Point p3 = b_ - a_;
@@ -84,17 +84,17 @@ public:
 	}
 
 	Point getNormal(Point& x) {
-		return normal_;
+		return normal_/ normal_.len();
 	}
 
-	bool rayIntersect(Line& ray, Point& result, ld& distance, Colour& color) {
+	bool rayIntersect(Line& ray, Point& result, ld& distance, Colour& color, int mode) {
 		Triangle tr1(a_, b_, c_, normal_, attr_);
 		Triangle tr2(a_, c_, d_, normal_, attr_);
-		if (tr1.rayIntersect(ray, result, distance, color) && (distance >= eps || isZero(distance))) {
+		if (tr1.rayIntersect(ray, result, distance, color, mode) && (distance >= eps || isZero(distance))) {
 			return 1;
 		}
 		else
-			if (tr2.rayIntersect(ray, result, distance, color) && (distance >= eps || isZero(distance))) {
+			if (tr2.rayIntersect(ray, result, distance, color, mode) && (distance >= eps || isZero(distance))) {
 				return 1;
 			}
 			else {
@@ -135,10 +135,10 @@ public:
 		return Line{ x, x + newDirect };
 	}
 
-	bool rayIntersect(Line& ray, Point& result, ld& distance, Colour& color) {
+	bool rayIntersect(Line& ray, Point& result, ld& distance, Colour& color, int mode) {
 		ld r2 = rad_*rad_;
 		Point cent = cen_-ray.point;
-		if (isZero(cent.len2() - r2) && cent*ray.direct < 0) {
+		if (isZero(cent.len2() - r2) && mode == 1) {
 			return 0;
 		}
 		ld proj = ray.direct*cent / ray.direct.len();
@@ -148,7 +148,7 @@ public:
 		else {
 			ld deltaDist = sqrt(r2 - (cent.len2() - proj*proj));
 			distance = proj - deltaDist;
-			if (distance < eps) {
+			if (distance < -eps) {
 				return 0;
 			}
 			result = ray.point + ray.direct * distance / ray.direct.len();
